@@ -1,4 +1,4 @@
-from htmlnode import HTMLNode, LeafNode
+from htmlnode import HTMLNode, LeafNode, ParentNode
 import unittest
 
 # Test 1

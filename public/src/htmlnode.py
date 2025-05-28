@@ -18,16 +18,17 @@ class HTMLNode:
         return prop_string
 
     def __repr__(self):
-        return f"tag = {self.tag}, value = {self.value}, children = {self.children}, props = {self.props}"
+        children_repr = len(self.children) if self.children is not None else 0
+        return f"tag = {self.tag}, value = {self.value}, children = {children_repr}, props = {self.props}"
 
 class LeafNode(HTMLNode):
     def __init__(self, tag, value, props=None):
         super().__init__(tag, value, None, props)
 
     def to_html(self):
-        if self.value == None:
+        if self.value is None:
             raise ValueError("Value can't be None")
-        if self.tag == None:
+        if self.tag is None:
             return str(self.value)
         else:
             if self.props != None:
@@ -38,17 +39,17 @@ class LeafNode(HTMLNode):
 
 class ParentNode(HTMLNode):
     def __init__(self, tag, children, props=None):
-        super().__init__(tag, value=None, children, props)
+        super().__init__(tag, None, children, props)
 
-    def to_html(self, tag, children, props=None):
-        if self.tag == None:
+    def to_html(self):
+        if self.tag is None:
             raise ValueError("Tag can't be None")
-        elif self.children == None:
+        elif self.children is None:
             raise ValueError("No Children object found")
         else:
             child_string_list = []
             for child in self.children:
-                child_html = child.to_html
+                child_html = child.to_html()
                 child_string_list.append(child_html)
-            child_strings = " ".join(child_string_list)
-            return f'<{self.tag}>{child_strings}</{self.tag}>'
+        child_strings = "".join(child_string_list)
+        return f'<{self.tag}>{child_strings}</{self.tag}>'
