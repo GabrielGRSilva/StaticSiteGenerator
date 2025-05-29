@@ -1,5 +1,6 @@
-from htmlnode import HTMLNode, LeafNode, ParentNode
+from htmlnode import *
 import unittest
+from textnode import *
 
 # Test 1
 test_props = {"href": "https://www.google.com", "target": "_blank"}
@@ -19,3 +20,52 @@ print("Test 3 - just value:", node3)
 # Test 4
 node4 = LeafNode("p", "Hello, world!")                #Test Child Class
 print("Test 4 - LeafNode:", node4.to_html())
+import unittest
+
+#UnitTest Tests
+class TestNodeToHTMLFunction(unittest.TestCase):
+    def test_text(self):
+        node = TextNode("This is a text node", TextType.NORMAL)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, None)
+        self.assertEqual(html_node.value, "This is a text node")
+
+    def test_text_bold(self):
+        node = TextNode("This is a text node", TextType.BOLD)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "b")
+        self.assertEqual(html_node.value, "This is a text node")
+
+    def test_text_italic(self):
+        node = TextNode("This is a text node", TextType.ITALIC)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "i")
+        self.assertEqual(html_node.value, "This is a text node")
+
+    def test_text_code(self):
+        node = TextNode("This is a text node", TextType.CODE)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "code")
+        self.assertEqual(html_node.value, "This is a text node")
+
+    def test_text_link(self):
+        node = TextNode("Click me!", TextType.LINK)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "a")
+        self.assertEqual(html_node.value, "Click me!")
+
+    def test_text_image(self):
+        node = TextNode(None, TextType.IMAGE)
+        html_node = text_node_to_html_node(node)
+        self.assertEqual(html_node.tag, "img")
+        self.assertEqual(html_node.value, None)
+
+class Test_Split_Nodes_Delimiter_Function(unittest.TestCase):
+    def test_standard_input(self):
+        node = TextNode("This is text with a `code block` word", TextType.NORMAL)
+        new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+        print (f"TESTANDO: NEW NODES == {new_nodes}")
+        self.assertEqual(new_nodes, [TextNode("This is text with a ", TextType.NORMAL),TextNode("code block", TextType.CODE),TextNode(" word", TextType.NORMAL),])
+
+if __name__ == "__main__":
+        unittest.main()
