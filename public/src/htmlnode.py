@@ -1,4 +1,13 @@
 from textnode import *
+import re
+
+def extract_markdown_images(text):
+    return re.findall(r'!\[(.*?)\]\((.*?)\)', text)
+
+
+def extract_markdown_links(text):
+   return re.findall(r'(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)',text)
+
 
 def text_node_to_html_node(text_node):
     match text_node.text_type:
@@ -21,23 +30,59 @@ def text_node_to_html_node(text_node):
             return LeafNode("img", None, {"src": "SRC", "alt": "ALTTEXT"})
 
         case _:
-            raise exception("Invalid Text_Node type")
+            raise Exception("Invalid Text_Node type")
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):                     #Separate nodes into list of TextNodes based on a delimiter, like '
     new_node_list = []
-    if text_type != TextType.NORMAL:
-        new_node_list.append(old_nodes)
-        return new_node_list
-    if old_nodes.count(delimiter) <= 1:
-        raise Exception("Invalid Markdown Syntax: You need to open AND close with the delimiter!")
-    else:
-        new_nodes = old_nodes.split(sep=delimiter)
-        print (f"TESTANDO: Este é o new nodes depois do split antes do for {new_node}")
-        for node in new_nodes:
-            print (f"TESTANDO: ESTE É UM NODE NO MEIO DO FOR {node}")
-            new_node = TextNode(node, text_type)
-            new_node_list.extend(new_node)
-        return new_node_list                                        #[TextNode(This is text with a `code block` word, , None)]
+    for each_old_node in old_nodes:
+        if each_old_node.text_type != TextType.NORMAL:
+            new_node_list.append(each_old_node)
+            continue
+
+        if each_old_node.text.count(delimiter) % 2 != 0:                       #Checks if the string contains an odd number of delimiters
+            raise Exception("Invalid Markdown Syntax: You need to open AND close with the delimiter!")
+        else:
+            new_strings = each_old_node.text.split(delimiter)
+            i = 0                                       #i is important because odd "i" is INSIDE the delimter, with text_type, while even "i" is OUTSIDE with TextType.Normal
+            for each_string in new_strings:
+                if i % 2 == 0 or i == 0:
+                    i += 1
+                    new_node_list.append(TextNode(each_string, TextType.NORMAL))
+
+                else:
+                    i += 1
+                    new_node_list.append(TextNode(each_string, text_type))
+
+    return new_node_list
+
+def split_nodes_image(old_nodes):
+    new_node_list = []
+#oldnode: [TextNode(This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png), TextType.NORMAL)]
+    for each_old_node in old_nodes:
+        image_parts = extract_markdown_images(each_old_node.text)   #('image', 'https://i.imgur.com/zjjcJKZ.png'), ('second image', 'https://i.imgur.com/3elNhQu.png')
+        text_parts = re.findall(r'(?:^|(?<=\)))([^!\[\]()]+)',each_old_node.text) #['This is text with an ', ' and another ']
+        i = 0                                       #see I explanation in above function
+        for image in image_parts:
+           for text in text_parts:
+            if i % 2 == 0 or i == 0:                        #ITERAÇÃO TÁ PEGANDO O MESMO TEXT 2 VEZES
+                i += 1
+                new_node_list.append(TextNode(text, TextType.NORMAL))
+
+            else:
+                i += 1
+                new_node_list.append(TextNode(image[0], TextType.IMAGE, image[1]))
+
+    print (f"NEWNODELIST == {new_node_list}")
+    return new_node_list
+
+
+    # example img node TextNode(This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)", TextType.TEXT)
+    # Extract Markdown Images: [('rick roll', 'https://i.imgur.com/aKaOqIh.gif'), ('obi wan', 'https://i.imgur.com/fJRm4Vk.jpeg')]
+    # TextNode ("This is a text with a ", TextType.TEXT)
+    # TextNode ("rick roll", TextType.IMAGE, "https://i.imgur.com/aKaOqIh.gif")
+    # TextNode (" and ", TextType.TEXT)
+    # TextNode ("obi wan", TextType.IMAGE,(https://i.imgur.com/fJRm4Vk.jpeg) )
+
 
 class HTMLNode:
     def __init__(self, tag=None, value=None, children=None, props=None):
