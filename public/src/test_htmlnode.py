@@ -29,6 +29,10 @@ print ("Test 5 - Nodes Delimiter", new_nodes)
 text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
 print("Test 6 - Extract Markdown Images:", extract_markdown_images(text))
 
+# Test 7
+text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+print("Test 7 - text_to_textnodes:", text_to_textnodes(text))
+
 
 #UnitTest Tests
 class TestNodeToHTMLFunction(unittest.TestCase):
@@ -103,14 +107,14 @@ class Test_Extract_Markdown_Images_and_Text_Functions(unittest.TestCase):
         self.assertEqual(extract_markdown_images(text),[('rick roll', 'https://i.imgur.com/aKaOqIh.gif')])
         self.assertEqual(extract_markdown_links(text), [('to boot dev', 'https://www.boot.dev')])
 
-class Test_Split_Nodes_Im0age(unittest.TestCase):
+class Test_Split_Nodes_Image(unittest.TestCase):
     def test_split_images(self):
         node = TextNode(
             "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
             TextType.NORMAL,
         )
         new_nodes = split_nodes_image([node])
-        #print (f"Veja os new_nodes no TESTE: {new_nodes}")
+
         self.assertListEqual(
             [
                 TextNode("This is text with an ", TextType.NORMAL),
@@ -122,6 +126,7 @@ class Test_Split_Nodes_Im0age(unittest.TestCase):
             ],
             new_nodes,
         )
+
 
 if __name__ == "__main__":
         unittest.main()

@@ -23,11 +23,11 @@ def text_node_to_html_node(text_node):
         case TextType.CODE:
             return LeafNode("code", text_node.text)
 
-        case TextType.LINK: ##Change LINK later!
-            return LeafNode("a", text_node.text, {"href": "https://www.google.com"})
+        case TextType.LINK:
+            return LeafNode("a", text_node.text, {"href": text_node.url})
 
         case TextType.IMAGE:
-            return LeafNode("img", None, {"src": "SRC", "alt": "ALTTEXT"})
+            return LeafNode("img", None, {"src": text_node.url, "alt": text_node.text})
 
         case _:
             raise Exception("Invalid Text_Node type")
@@ -57,32 +57,49 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):                     
 
 def split_nodes_image(old_nodes):
     new_node_list = []
-#oldnode: [TextNode(This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png), TextType.NORMAL)]
     for each_old_node in old_nodes:
-        image_parts = extract_markdown_images(each_old_node.text)   #('image', 'https://i.imgur.com/zjjcJKZ.png'), ('second image', 'https://i.imgur.com/3elNhQu.png')
-        text_parts = re.findall(r'(?:^|(?<=\)))([^!\[\]()]+)',each_old_node.text) #['This is text with an ', ' and another ']
+        image_parts = extract_markdown_images(each_old_node.text)
+        text_parts = re.findall(r'(?:^|(?<=\)))([^!\[\]()]+)',each_old_node.text) #This regex selects everything OUTSIDE of parentheses
         i = 0                                       #see I explanation in above function
         for image in image_parts:
-           for text in text_parts:
-            if i % 2 == 0 or i == 0:                        #ITERAÇÃO TÁ PEGANDO O MESMO TEXT 2 VEZES
-                i += 1
-                new_node_list.append(TextNode(text, TextType.NORMAL))
+            new_node_list.append(TextNode(text_parts[i], TextType.NORMAL))     #loop alternates between OUTSIDE parentheses (text_parts) and INSIDE (image)
+            new_node_list.append(TextNode(image[0], TextType.IMAGE, image[1]))
+            i += 1
 
-            else:
-                i += 1
-                new_node_list.append(TextNode(image[0], TextType.IMAGE, image[1]))
+        for text in text_parts:                             #This should handle cases where there is more text after the IMG markdown
+            new_text_node = TextNode(text, TextType.NORMAL)
+            if new_text_node not in new_node_list:
+                new_node_list.append(new_text_node)
 
-    print (f"NEWNODELIST == {new_node_list}")
     return new_node_list
 
+def split_nodes_link(old_nodes):
+    new_node_list = []
 
-    # example img node TextNode(This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)", TextType.TEXT)
-    # Extract Markdown Images: [('rick roll', 'https://i.imgur.com/aKaOqIh.gif'), ('obi wan', 'https://i.imgur.com/fJRm4Vk.jpeg')]
-    # TextNode ("This is a text with a ", TextType.TEXT)
-    # TextNode ("rick roll", TextType.IMAGE, "https://i.imgur.com/aKaOqIh.gif")
-    # TextNode (" and ", TextType.TEXT)
-    # TextNode ("obi wan", TextType.IMAGE,(https://i.imgur.com/fJRm4Vk.jpeg) )
+    for each_old_node in old_nodes:
+        link_parts = extract_markdown_links(each_old_node.text)
+        text_parts = re.findall(r'(?:^|(?<=\)))([^!\[\]()]+)',each_old_node.text) #This regex selects everything OUTSIDE of parentheses
+        #i = 0                                       #see I explanation in above function
+        for items in link_parts:
+            #new_node_list.append(TextNode(text_parts[i], TextType.NORMAL))     #loop alternates between OUTSIDE parentheses (text_parts) and INSIDE (image)
+            new_node_list.append(TextNode(items[0], TextType.LINK, items[1]))
+            #i += 1
 
+    return new_node_list
+
+def text_to_textnodes(text):
+#example input: This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)
+    start_node = TextNode(text, TextType.NORMAL) #This creates a TextNode from the input text so the functions work
+
+    nodes_list = []
+
+    bold_split = split_nodes_delimiter([start_node], "**", TextType.BOLD)
+    italic_split = split_nodes_delimiter(bold_split,"_", TextType.ITALIC)
+    code_split = split_nodes_delimiter(italic_split, "`", TextType.CODE)
+    image_split = split_nodes_image(code_split)
+    link_split = split_nodes_link(code_split)
+
+    return image_split + link_split
 
 class HTMLNode:
     def __init__(self, tag=None, value=None, children=None, props=None):
