@@ -12,28 +12,25 @@ def extract_markdown_links(text):
 def text_node_to_html_node(text_node):
     match text_node.text_type:
         case TextType.NORMAL:
-            return LeafNode(None, text_node.text)
-
+            node = LeafNode(None, text_node.text)
         case TextType.BOLD:
-            return LeafNode("b", text_node.text)
-
+            node = LeafNode("b", text_node.text)
         case TextType.ITALIC:
-            return LeafNode("i", text_node.text)
-
+            node = LeafNode("i", text_node.text)
         case TextType.CODE:
-            return LeafNode("code", text_node.text)
-
+            node = LeafNode("code", text_node.text)
         case TextType.LINK:
-            return LeafNode("a", text_node.text, {"href": text_node.url})
-
+            node = LeafNode("a", text_node.text, {"href": text_node.url})
         case TextType.IMAGE:
-            return LeafNode("img", None, {"src": text_node.url, "alt": text_node.text})
-
+            node = LeafNode("img", None, {"src": text_node.url, "alt": text_node.text})
         case _:
             raise Exception("Invalid Text_Node type")
 
+    return node
+
 def split_nodes_delimiter(old_nodes, delimiter, text_type):                     #Separate nodes into list of TextNodes based on a delimiter, like '
     new_node_list = []
+
     for each_old_node in old_nodes:
         if each_old_node.text_type != TextType.NORMAL:
             new_node_list.append(each_old_node)
@@ -45,13 +42,11 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):                     
             new_strings = each_old_node.text.split(delimiter)
             i = 0                                       #i is important because odd "i" is INSIDE the delimter, with text_type, while even "i" is OUTSIDE with TextType.Normal
             for each_string in new_strings:
-                if i % 2 == 0 or i == 0:
-                    i += 1
+                if i % 2 == 0:
                     new_node_list.append(TextNode(each_string, TextType.NORMAL))
-
                 else:
-                    i += 1
                     new_node_list.append(TextNode(each_string, text_type))
+                i += 1
 
     return new_node_list
 
@@ -59,47 +54,195 @@ def split_nodes_image(old_nodes):
     new_node_list = []
     for each_old_node in old_nodes:
         image_parts = extract_markdown_images(each_old_node.text)
-        text_parts = re.findall(r'(?:^|(?<=\)))([^!\[\]()]+)',each_old_node.text) #This regex selects everything OUTSIDE of parentheses
-        i = 0                                       #see I explanation in above function
-        for image in image_parts:
-            new_node_list.append(TextNode(text_parts[i], TextType.NORMAL))     #loop alternates between OUTSIDE parentheses (text_parts) and INSIDE (image)
-            new_node_list.append(TextNode(image[0], TextType.IMAGE, image[1]))
-            i += 1
+        if len(image_parts) == 0:
+            new_node_list.append(each_old_node)
+        else:
+            text_parts = re.findall(r'(?:^|(?<=\)))([^!\[\]()]+)',each_old_node.text) #This regex selects everything OUTSIDE of parentheses
+            i = 0                                       #see I explanation in above function
+            for image in image_parts:
+                new_node_list.append(TextNode(text_parts[i], each_old_node.text_type))     #loop alternates between OUTSIDE parentheses (text_parts) and INSIDE (image)
+                new_node_list.append(TextNode(image[0], TextType.IMAGE, image[1]))
+                i += 1
 
-        for text in text_parts:                             #This should handle cases where there is more text after the IMG markdown
-            new_text_node = TextNode(text, TextType.NORMAL)
-            if new_text_node not in new_node_list:
-                new_node_list.append(new_text_node)
+            for text in text_parts:                             #This should handle cases where there is more text after the IMG markdown
+                new_text_node = TextNode(text, each_old_node.text_type)
+                if new_text_node not in new_node_list:
+                    new_node_list.append(new_text_node)
 
     return new_node_list
 
-def split_nodes_link(old_nodes):
+def split_nodes_link(old_nodes): #example input: "Visit [Google](http://google.com) for search"
     new_node_list = []
-
-    for each_old_node in old_nodes:
-        link_parts = extract_markdown_links(each_old_node.text)
-        text_parts = re.findall(r'(?:^|(?<=\)))([^!\[\]()]+)',each_old_node.text) #This regex selects everything OUTSIDE of parentheses
-        #i = 0                                       #see I explanation in above function
-        for items in link_parts:
-            #new_node_list.append(TextNode(text_parts[i], TextType.NORMAL))     #loop alternates between OUTSIDE parentheses (text_parts) and INSIDE (image)
-            new_node_list.append(TextNode(items[0], TextType.LINK, items[1]))
-            #i += 1
-
+    for node in old_nodes:
+        links = extract_markdown_links(node.text)
+        if links:   # if there are links to process
+            current_text = node.text
+            markdown_link = f"[{links[0][0]}]({links[0][1]})"
+            parts = current_text.split(markdown_link)
+            if parts[0]:
+                new_text_node = TextNode(parts[0], node.text_type)
+                new_node_list.append(new_text_node)
+            new_link_node = TextNode(links[0][0], TextType.LINK, links[0][1])
+            new_node_list.append(new_link_node)
+            if parts[1]:                                            #Check if there are other links in the function after the first
+                remaining_node = TextNode(parts[1], node.text_type)
+                recursive_nodes = split_nodes_link([remaining_node])
+                new_node_list.extend(recursive_nodes)
+        else:
+            new_node_list.append(node)
     return new_node_list
 
 def text_to_textnodes(text):
-#example input: This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)
-    start_node = TextNode(text, TextType.NORMAL) #This creates a TextNode from the input text so the functions work
-
-    nodes_list = []
+    start_node = TextNode(text, TextType.NORMAL)
 
     bold_split = split_nodes_delimiter([start_node], "**", TextType.BOLD)
-    italic_split = split_nodes_delimiter(bold_split,"_", TextType.ITALIC)
-    code_split = split_nodes_delimiter(italic_split, "`", TextType.CODE)
-    image_split = split_nodes_image(code_split)
-    link_split = split_nodes_link(code_split)
 
-    return image_split + link_split
+    italic_split = split_nodes_delimiter(bold_split,"_", TextType.ITALIC)
+
+    code_split = split_nodes_delimiter(italic_split, "`", TextType.CODE)
+
+    image_split = split_nodes_image(code_split)
+
+    link_split = split_nodes_link(image_split)
+
+    return link_split
+
+def markdown_to_blocks(markdown):
+    block_strings = markdown.split("\n\n")
+    block_list = []
+    for item in block_strings:
+        clean_string = item.strip()
+        no_excess_whitespace = clean_string.replace("    ", "")
+        if no_excess_whitespace:
+            block_list.append(no_excess_whitespace)
+
+    return block_list
+
+BlockType = Enum('BlockType', ['paragraph','heading','code','quote','unordered_list','ordered_list'])
+
+def block_to_block_type(block):
+    if block == "":
+        return BlockType.paragraph
+    else:
+        if block.split('\n')[0].startswith('#'):
+            return BlockType.heading
+
+        elif block.split('\n')[0].startswith('```'):
+            return BlockType.code
+
+        elif block.split('\n')[0].startswith('>'):
+            return BlockType.quote
+
+        elif block.split('\n')[0].startswith('-'):
+            return BlockType.unordered_list
+
+        elif block.split('\n')[0].split()[0].endswith('.') and block.split('\n')[0].split()[0][:-1].isdigit():
+            #splits then checks if the first item in block ends is a number with dot and space, like "1. " or "23. "
+            return BlockType.ordered_list
+
+        else:
+            return BlockType.paragraph
+
+def add_tags_for_blocks(block, type):
+    match type:
+        case BlockType.heading:
+            count_hash = block.count('#')
+            remove_div = block.strip('#').strip(' ')
+            return f"<h{count_hash}>{remove_div}</h{count_hash}>", count_hash
+
+        case BlockType.code:
+            remove_div = block.strip('`').strip(' ')
+            return f"<pre><code>{remove_div}</code></pre>"
+
+        case BlockType.quote:
+            remove_div = block.strip('>').strip(' ')
+            return f"<blockquote>{remove_div}</blockquote>"
+
+        case BlockType.unordered_list:
+            html_list = []
+            list_items = block.split("-")
+            for item in list_items:
+                if item != "":
+                    item_with_tag = f"<li>{item}</li>"
+                    html_list.append(item_with_tag)
+            final_string = "".join(html_list)
+            return f"<ul>{final_string}</ul>"
+
+        case BlockType.ordered_list:
+            html_list = []
+            list_items = re.split((r'(\d. )+'), block)  #this splits the block on each number
+            del list_items[0]    #remove the empty string from the beginning
+            i = 0
+            for item in list_items:
+                items_with_tag = f"<li>{list_items[i]}" + f"{list_items[i+1]}</li>"
+                html_list.append(items_with_tag)
+                if i+3 < len(list_items):       #this prevents IndexError if we try to find an i or i+1 which is greater than len(list_items)
+                    i += 2
+            final_string = "".join(html_list)
+            return f"<ol>{final_string}</ol>"
+
+        case BlockType.paragraph:
+            return f"<p>{block}</p>"
+
+        case _:
+            raise ValueError("Invalid block type")
+
+def text_to_children(text):
+    text_node_objects = text_to_textnodes(text)
+    children_list = []
+    for node in text_node_objects:
+        new_node = text_node_to_html_node(node)
+        children_list.append(new_node)
+    return children_list
+
+
+def markdown_to_html_node(markdown):
+    block_list = markdown_to_blocks(markdown)
+    new_html_nodes_list = []
+    for block in block_list:
+        block_type = block_to_block_type(block)
+        if block_type == BlockType.heading:
+            h_number = block.count('#')
+            clean_text = block.lstrip('# ')
+            new_node = ParentNode(f"h{h_number}", text_to_children(clean_text))
+            new_html_nodes_list.append(new_node)
+        elif block_type == BlockType.code:
+            process_text_node = TextNode(block.strip('```').lstrip(), TextType.CODE)
+            inner_node = [text_node_to_html_node(process_text_node)]
+            new_node = ParentNode("pre", inner_node)  #Should be equivalent to HTMLNode ("pre", "", inner_node)
+            new_html_nodes_list.append(new_node)
+        elif block_type == BlockType.quote:
+            clean_text = block.lstrip('> ')
+            new_node = ParentNode("blockquote",text_to_children(clean_text))
+            new_html_nodes_list.append(new_node)
+        elif block_type == BlockType.unordered_list:
+            children_nodes_list = []
+            list_items = block.split("-")
+            for item in list_items:
+                if item != "":
+                    clean_item = item.strip()
+                    item_with_tag = ParentNode("li", text_to_children(clean_item))          #Not LeafNode - They may contain markdown stuff
+                    children_nodes_list.append(item_with_tag)
+            new_node = ParentNode("ul", children_nodes_list)
+            new_html_nodes_list.append(new_node)
+        elif block_type == BlockType.ordered_list:
+            children_nodes_list = []
+            list_items = block.split("\n")
+            for item in list_items:
+                if item != "":
+                    clean_item_index = item.find(". ")
+                    item_with_tag = ParentNode("li", text_to_children(item[clean_item_index+2:]))     #clean_item_index+2 guarantees you will find the dot and the space and skip past both
+                    children_nodes_list.append(item_with_tag)
+            new_node = ParentNode("ol", children_nodes_list)
+            new_html_nodes_list.append(new_node)
+        elif block_type == BlockType.paragraph:
+            clean_text = block.replace("\n", " ")
+            new_node = ParentNode("p", text_to_children(clean_text))
+            new_html_nodes_list.append(new_node)
+        else:
+            raise ValueError("Invalid block type")
+    return ParentNode("div", new_html_nodes_list)
+
 
 class HTMLNode:
     def __init__(self, tag=None, value=None, children=None, props=None):
