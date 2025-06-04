@@ -1,1 +1,1 @@
-python3 main.py /https://github.com/GabrielGRSilva/StaticSiteGenerator/
+python3 main.py "/StaticSiteGenerator/"
