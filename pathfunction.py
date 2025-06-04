@@ -1,5 +1,3 @@
-import textnode
-import testparentnodes_htmlnode
 import os
 import shutil
 
@@ -21,9 +19,3 @@ def file_static_to_public(source_path="root/static", destination_path="root/publ
             file_static_to_public(current_item_path, new_dir)
         else:
             print ("Copying complete")
-
-def main():
-
-
-main ()
-file_static_to_public()
