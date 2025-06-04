@@ -59,6 +59,10 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, bas
         if os.path.isfile(path_to_item):
             destination = os.path.splitext(dest_path_to_item)
             correct_extension = destination[0] + ".html"
+
+            # This line ensures the destination directory exists
+            os.makedirs(dest_dir_path, exist_ok=True)
+
             with open(path_to_item, "r") as f:
                 markdown_content = f.read()
             with open(template_path, "r") as f:
@@ -70,14 +74,12 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, bas
             href_replace = title_content_replace.replace('href="/', f'href="{basepath}')
             final_string = href_replace.replace('src="/', f'src="{basepath}')
 
-
             with open(correct_extension, "w") as f:
                 f.write(final_string)
 
         else:
             new_dest_path = os.path.join(dest_dir_path, item)
             os.makedirs(new_dest_path, exist_ok=True)
-            generate_pages_recursive(path_to_item, template_path, new_dest_path, basepath)
     return ("Pages generated!")
 
 def main():
