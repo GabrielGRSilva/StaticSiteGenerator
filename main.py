@@ -97,7 +97,6 @@ def main():
         shutil.rmtree("public")
     file_static_to_public()
     print ("Copying complete")
-    generate_page("content/index.md", "template.html", "docs/index.html", basepath)
     generate_pages_recursive("content", "template.html", "docs", basepath)
 
 
