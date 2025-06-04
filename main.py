@@ -48,6 +48,7 @@ def generate_page(from_path, template_path, dest_path, basepath="/"):
     parent_dir = os.path.dirname(dest_path)
     os.makedirs(parent_dir, exist_ok=True)
 
+
     with open(dest_path, "w") as f:
         f.write(final_string)
 
@@ -74,12 +75,16 @@ def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, bas
             href_replace = title_content_replace.replace('href="/', f'href="{basepath}')
             final_string = href_replace.replace('src="/', f'src="{basepath}')
 
+            parent_dir = os.path.dirname(correct_extension)
+            os.makedirs(parent_dir, exist_ok=True)
+
             with open(correct_extension, "w") as f:
                 f.write(final_string)
 
         else:
             new_dest_path = os.path.join(dest_dir_path, item)
             os.makedirs(new_dest_path, exist_ok=True)
+            generate_pages_recursive(path_to_item, template_path, new_dest_path, basepath)
     return ("Pages generated!")
 
 def main():
