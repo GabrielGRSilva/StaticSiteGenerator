@@ -35,9 +35,9 @@
 
 Here's what `elvish` looks like (the perfect scripting language for Azeroth - gnomes and goblins are experts on that!):
 ```
-function main()
-print("Belono sil'aru, belore'dorei!")
-end
+func main(){
+    fmt.Println("Belono sil'aru, belore'dorei!")
+}
 ```
 Want to get in touch? [Contact me here](/contact).
 
