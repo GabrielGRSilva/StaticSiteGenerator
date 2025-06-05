@@ -2,7 +2,7 @@
 
 ![WoW logo](/images/wow.png)
 
-**I love World of Warcraft**. I've been playing it since 2012! And, "WoW", that's a long time!
+**I love World of Warcraft**. I've been playing it since 2012! And, "WoW", that's a long time!!
 
 > "For the Alliance!"
 >
