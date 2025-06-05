@@ -37,7 +37,7 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):                     
             continue
 
         if each_old_node.text.count(delimiter) % 2 != 0:                       #Checks if the string contains an odd number of delimiters
-            raise Exception("Invalid Markdown Syntax: You need to open AND close with the delimiter!")
+            raise Exception(f"Invalid Markdown Syntax: You need to open AND close with the delimiter!File {each_old_node}")
         else:
             new_strings = each_old_node.text.split(delimiter)
             i = 0                                       #i is important because odd "i" is INSIDE the delimter, with text_type, while even "i" is OUTSIDE with TextType.Normal
