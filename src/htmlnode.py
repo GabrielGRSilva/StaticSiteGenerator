@@ -104,15 +104,35 @@ def text_to_textnodes(text):
     return link_split
 
 def markdown_to_blocks(markdown):
-    block_strings = markdown.split("\n\n")
-    block_list = []
-    for item in block_strings:
-        clean_string = item.strip()
-        no_excess_whitespace = clean_string.replace("    ", "")
-        if no_excess_whitespace:
-            block_list.append(no_excess_whitespace)
-
-    return block_list
+    lines = markdown.split('\n')
+    blocks = []
+    current_block = []
+    in_code_block = False
+    for line in lines:
+        stripped_line = line.strip()
+        if stripped_line.startswith('```'):
+            if in_code_block:
+                current_block.append(line)
+                blocks.append('\n'.join(current_block).strip())
+                current_block = []
+                in_code_block = False
+            else:
+                if current_block:
+                    blocks.append('\n'.join(current_block).strip())
+                    current_block = []
+                current_block.append(line)
+                in_code_block = True
+        elif in_code_block:
+            current_block.append(line)
+        elif stripped_line == '':
+            if current_block:
+                blocks.append('\n'.join(current_block).strip())
+                current_block = []
+        else:
+            current_block.append(line)
+    if current_block:
+        blocks.append('\n'.join(current_block).strip())
+    return blocks
 
 BlockType = Enum('BlockType', ['paragraph','heading','code','quote','unordered_list','ordered_list'])
 
