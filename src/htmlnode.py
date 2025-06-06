@@ -212,13 +212,18 @@ def markdown_to_html_node(markdown):
             new_node = ParentNode(f"h{h_number}", text_to_children(clean_text))
             new_html_nodes_list.append(new_node)
         elif block_type == BlockType.code:
-            process_text_node = TextNode(block.strip('```').lstrip(), TextType.CODE)
+            process_text_node = TextNode(block.strip('```'), TextType.CODE)
             inner_node = [text_node_to_html_node(process_text_node)]
             new_node = ParentNode("pre", inner_node)  #Should be equivalent to HTMLNode ("pre", "", inner_node)
             new_html_nodes_list.append(new_node)
         elif block_type == BlockType.quote:
-            clean_text = block.lstrip('> ')
-            new_node = ParentNode("blockquote",text_to_children(clean_text))
+            lines = block.split("\n")
+            line_list = []
+            for line in lines:
+                line = line.strip('>').strip(' ')
+                line_list.append(line)
+            final_lines = "\n".join(line_list)
+            new_node = ParentNode("blockquote",text_to_children(final_lines))
             new_html_nodes_list.append(new_node)
         elif block_type == BlockType.unordered_list:
             children_nodes_list = []
