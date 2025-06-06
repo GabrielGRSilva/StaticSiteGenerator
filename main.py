@@ -95,9 +95,15 @@ def main():
 
     if os.path.exists("public"):
         shutil.rmtree("public")
+
+    # Add this print statement
+    print("Current working directory from Python:", os.getcwd())
+
     file_static_to_public()
     print ("Copying complete")
+    generate_page("content/index.md", "template.html", "docs/index.html", basepath)
     generate_pages_recursive("content", "template.html", "docs", basepath)
+
 
 
 if __name__ == "__main__":
