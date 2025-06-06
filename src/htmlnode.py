@@ -147,12 +147,21 @@ def add_tags_for_blocks(block, type):
             return f"<h{count_hash}>{remove_div}</h{count_hash}>", count_hash
 
         case BlockType.code:
-            remove_div = block.strip('`').strip(' ')
+            remove_div = block.strip('`')
             return f"<pre><code>{remove_div}</code></pre>"
 
         case BlockType.quote:
-            remove_div = block.strip('>').strip(' ')
-            return f"<blockquote>{remove_div}</blockquote>"
+            new_lines = []
+            for line in block.split('\n'):
+                line = line.strip('>').strip(' ')
+                if line == "":
+                    format_line = "<p></p>" + "\n"
+                    new_lines.append(format_line)
+                else:
+                    format_line = f"<p>{line}</p>" + "\n"
+                    new_lines.append(format_line)
+            final_lines = "".join(new_lines)
+            return f"<blockquote>{final_lines}</blockquote>"
 
         case BlockType.unordered_list:
             html_list = []
